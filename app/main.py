@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 from .database import engine, Base, SessionLocal
 from .routers import auth, courses, students
 from .services.course_service import CourseService
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
 
 # Створення таблиць у БД при запуску
 Base.metadata.create_all(bind=engine)
@@ -25,8 +27,12 @@ scheduler = BackgroundScheduler()
 # Для тесту можна поставити 10 або 30 секунд, щоб швидше побачити результат
 scheduler.add_job(scheduled_deadline_checker, 'interval', seconds=60)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ініціалізуємо кеш у пам'яті
+    FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+
     scheduler.start()
     yield
     scheduler.shutdown()

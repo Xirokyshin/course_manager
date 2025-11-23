@@ -9,3 +9,4 @@ python-jose[cryptography]
 apscheduler
 pytest
 requests
+fastapi-cache2

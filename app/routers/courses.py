@@ -5,6 +5,7 @@ from ..schemas import CourseCreate, CourseResponse, AssignmentCreate
 from ..models import User
 from ..services.course_service import CourseService
 from ..services.auth_service import get_current_user
+from fastapi_cache.decorator import cache
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
 
@@ -17,7 +18,8 @@ def create_course(
     return CourseService.create_course(db, course)
 
 @router.get("/{course_id}", response_model=CourseResponse)
-def read_course(
+@cache(expire=60)
+async def read_course(
     course_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)

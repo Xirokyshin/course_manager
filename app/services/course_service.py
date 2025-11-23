@@ -5,9 +5,6 @@ from ..schemas import CourseCreate, AssignmentCreate, GradeCreate, SubmissionCre
 from .email_service import send_email_notification
 from datetime import datetime, timezone
 
-# Simple in-memory cache
-course_cache = {}
-
 
 class CourseService:
 
@@ -25,15 +22,9 @@ class CourseService:
 
     @staticmethod
     def get_course(db: Session, course_id: int):
-        if course_id in course_cache:
-            print("--- Returning from CACHE ---")
-            return course_cache[course_id]
-
         course = db.query(Course).filter(Course.id == course_id).first()
         if not course:
             raise HTTPException(status_code=404, detail="Course not found")
-
-        course_cache[course_id] = course
         return course
 
     @staticmethod
@@ -49,10 +40,6 @@ class CourseService:
         if current_points + assignment.max_score > limit:
             raise HTTPException(status_code=400,
                                 detail=f"Adding this {assignment.type} exceeds the point limit defined in formula.")
-
-        # Очищуємо кеш, бо дані змінилися
-        if course_id in course_cache:
-            del course_cache[course_id]
 
         db_assign = Assignment(**assignment.model_dump(), course_id=course_id)
         db.add(db_assign)
