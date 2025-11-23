@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import User
+from ..models import User, Student
 from ..config import settings  # Імпортуємо наші налаштування
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -42,3 +42,25 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     if user is None:
         raise credentials_exception
     return user
+
+
+async def get_current_student(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate student credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        # У токені ми будемо зберігати email студента в полі "sub"
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    # Шукаємо саме в таблиці Student
+    student = db.query(Student).filter(Student.email == email).first()
+    if student is None:
+        raise credentials_exception
+    return student

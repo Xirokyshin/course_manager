@@ -32,6 +32,7 @@ class Student(Base):
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String)
     email = Column(String)
+    hashed_password = Column(String)
     course_id = Column(Integer, ForeignKey("courses.id"))
 
     course = relationship("Course", back_populates="students")
