@@ -29,12 +29,27 @@ class AssignmentResponse(AssignmentCreate):
         from_attributes = True
 
 # --- Student Schemas ---
-class StudentCreate(BaseModel):
+# 1. Створюємо спільну базу (тільки безпечні поля)
+class StudentBase(BaseModel):
     full_name: str
     email: EmailStr
 
-class StudentResponse(StudentCreate):
+
+# 2. Схема для СТВОРЕННЯ (тут додаємо пароль)
+class StudentCreate(StudentBase):
+    password: str
+
+
+# 3. Схема для ЛОГІНУ (тут тільки пошта і пароль)
+class StudentLogin(BaseModel):
+    email: str
+    password: str
+
+
+# 4. Схема для ВІДПОВІДІ (наслідує Base, а не Create -> тому без пароля!)
+class StudentResponse(StudentBase):
     id: int
+
     class Config:
         from_attributes = True
 
@@ -66,7 +81,6 @@ class GradeCreate(BaseModel):
     submitted_at: Optional[datetime] = None
 
 class SubmissionCreate(BaseModel):
-    student_id: int
     assignment_id: int
     answer_text: str  # Наприклад, посилання на GitHub або текст відповіді
 
