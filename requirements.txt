@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+pydantic-settings
+email-validator
+passlib[bcrypt]
+python-jose[cryptography]
+apscheduler
+pytest
+requests
