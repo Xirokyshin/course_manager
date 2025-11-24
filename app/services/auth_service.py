@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone  # <--- Додали timezone
-from typing import Optional
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
