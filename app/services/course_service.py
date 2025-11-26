@@ -56,14 +56,19 @@ class CourseService:
         if not assignment:
             raise HTTPException(status_code=404, detail="Assignment not found")
 
-        # 2. Перевірка на дублікат (чи вже здавав)
+        # --- ДОДАЄМО ПЕРЕВІРКУ СТУДЕНТА (ЗАХИСТ) ---
+        student = db.query(Student).filter(Student.id == student_id).first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+        # -------------------------------------------
+
+        # 2. Перевірка на дублікат (оновлення)
         existing_submission = db.query(Grade).filter(
             Grade.student_id == student_id,
             Grade.assignment_id == submission.assignment_id
         ).first()
 
         if existing_submission:
-            # Оновлюємо існуючий запис
             existing_submission.submitted_at = datetime.now(timezone.utc)
             existing_submission.student_answer = submission.answer_text
             db.commit()
@@ -71,7 +76,6 @@ class CourseService:
             return existing_submission
 
         # 3. Створення нового запису
-        # Тут була помилка з дужками/комами - тепер виправлено
         db_submission = Grade(
             student_id=student_id,
             assignment_id=submission.assignment_id,
@@ -87,17 +91,25 @@ class CourseService:
     # --- ВИПРАВЛЕНИЙ МЕТОД GRADE ---
     @staticmethod
     def grade_student(db: Session, grade_data: GradeCreate):
+        # 1. Перевірка завдання
         assignment = db.query(Assignment).filter(Assignment.id == grade_data.assignment_id).first()
         if not assignment:
             raise HTTPException(status_code=404, detail="Assignment not found")
 
-        # Шукаємо роботу студента
+        # --- ДОДАЛИ ЦЮ ПЕРЕВІРКУ ---
+        # 2. Перевірка студента (щоб не було помилки 500)
+        student = db.query(Student).filter(Student.id == grade_data.student_id).first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+        # ---------------------------
+
+        # 3. Шукаємо роботу студента (здачу)
         submission = db.query(Grade).filter(
             Grade.student_id == grade_data.student_id,
             Grade.assignment_id == grade_data.assignment_id
         ).first()
 
-        # Якщо студент не здавав, але викладач ставить оцінку - створюємо запис
+        # Якщо студент не здавав, створюємо пустий запис
         if not submission:
             submission = Grade(
                 student_id=grade_data.student_id,
@@ -107,35 +119,31 @@ class CourseService:
             )
             db.add(submission)
 
-        # Перевірка на вже виставлену оцінку (щоб не перезаписати випадково, якщо треба)
-        # Але за логікою ми тут саме оновлюємо оцінку, тому це ок.
-
-        # Перевірка на максимум балів
+        # 4. Перевірка на максимум балів
         if grade_data.score > assignment.max_score:
             raise HTTPException(
                 status_code=400,
                 detail=f"Score ({grade_data.score}) cannot exceed max points ({assignment.max_score})."
             )
 
-        # Час здачі беремо з бази
+        # 5. Логіка часу та штрафів
         submission_time = submission.submitted_at
         if submission_time.tzinfo is None:
             submission_time = submission_time.replace(tzinfo=timezone.utc)
 
         final_score = grade_data.score
 
-        # Штрафи
         if submission_time > assignment.deadline.replace(tzinfo=timezone.utc):
             final_score -= assignment.penalty_points
             if final_score < 0: final_score = 0
 
+        # 6. Збереження
         submission.score = final_score
         db.commit()
         db.refresh(submission)
 
-        # Email
-        student = db.query(Student).filter(Student.id == grade_data.student_id).first()
-
+        # 7. Відправка пошти
+        # (Тут ми вже використовуємо змінну student, яку знайшли на початку)
         email_subject = f"Grade for: {assignment.title}"
         email_body = (
             f"Hello {student.full_name},\n\n"
