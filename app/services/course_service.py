@@ -149,6 +149,49 @@ class CourseService:
         return submission
 
     @staticmethod
+    def delete_course(db: Session, course_id: int):
+        course = db.query(Course).filter(Course.id == course_id).first()
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+
+        db.delete(course)
+        db.commit()
+
+        return {"msg": "Course deleted"}
+
+    @staticmethod
+    def delete_assignment(db: Session, assignment_id: int):
+        # 1. Шукаємо завдання
+        assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
+        if not assignment:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+
+        # 2. ОЧИЩЕННЯ: Видаляємо всі оцінки/здачі за це завдання
+        # Якщо цього не зробити, база даних може заборонити видалення
+        db.query(Grade).filter(Grade.assignment_id == assignment_id).delete()
+
+        # 3. Видаляємо саме завдання
+        db.delete(assignment)
+        db.commit()
+
+        return {"msg": "Assignment and associated grades deleted"}
+
+    @staticmethod
+    def delete_student(db: Session, student_id: int):
+        # 1. Шукаємо студента
+        student = db.query(Student).filter(Student.id == student_id).first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        # 2. Видаляємо студента
+        # Завдяки cascade="all, delete-orphan" в моделі Student,
+        # всі його оцінки (grades) видаляться АВТОМАТИЧНО.
+        db.delete(student)
+        db.commit()
+
+        return {"msg": "Student and associated grades deleted"}
+
+    @staticmethod
     def check_missed_deadlines(db: Session):
         print("--- [SCHEDULER] Starting check... ---")
 
