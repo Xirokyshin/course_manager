@@ -44,6 +44,14 @@ def login_student(login_data: StudentLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": student.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
+@router.delete("/students/{student_id}")
+def delete_student(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user) # Захист: тільки викладач
+):
+    # Тут ми викликаємо сервіс (доведеться імпортувати CourseService в цей файл, якщо ще немає)
+    return CourseService.delete_student(db, student_id)
 
 @router.post("/students/", response_model=StudentResponse)
 def create_student(

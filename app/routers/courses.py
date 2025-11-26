@@ -17,6 +17,22 @@ def create_course(
 ):
     return CourseService.create_course(db, course)
 
+@router.delete("/{course_id}")
+def delete_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user) # Тільки викладач може видаляти
+):
+    return CourseService.delete_course(db, course_id)
+
+@router.delete("/assignments/{assignment_id}")
+def delete_assignment(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user) # Тільки викладач
+):
+    return CourseService.delete_assignment(db, assignment_id)
+
 @router.get("/{course_id}", response_model=CourseResponse)
 @cache(expire=60)
 async def read_course(
