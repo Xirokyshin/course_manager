@@ -6,21 +6,21 @@ from ..config import settings
 
 def send_email_notification(to_email: str, subject: str, message: str):
     try:
-        # Створення об'єкта листа
+        # Object of the email
         msg = MIMEMultipart()
         msg['From'] = settings.MAIL_FROM
         msg['To'] = to_email
         msg['Subject'] = subject
 
-        # Додаємо текст листа
+        # email text
         msg.attach(MIMEText(message, 'plain'))
 
-        # Підключення до сервера Gmail
+        # Connect to server
         server = smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT)
-        server.starttls()  # Вмикаємо шифрування
+        server.starttls()  # enable security
         server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
 
-        # Відправка
+        # send email
         text = msg.as_string()
         server.sendmail(settings.MAIL_FROM, to_email, text)
         server.quit()

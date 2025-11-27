@@ -8,15 +8,14 @@ from .services.course_service import CourseService
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 
-# Створення таблиць у БД при запуску
+# Creating all tables in database (One time operation)
 Base.metadata.create_all(bind=engine)
 
-# --- Scheduled Task (Bonus Point) ---
+# --- Scheduled Task ---
 def scheduled_deadline_checker():
-    # Оскільки це фонова задача, ми мусимо створити сесію вручну
+    # New database session for the scheduled task
     db = SessionLocal()
     try:
-        # Викликаємо нашу розумну логіку
         CourseService.check_missed_deadlines(db)
     except Exception as e:
         print(f"Error in scheduler: {e}")
@@ -24,13 +23,12 @@ def scheduled_deadline_checker():
         db.close()
 
 scheduler = BackgroundScheduler()
-# Для тесту можна поставити 10 або 30 секунд, щоб швидше побачити результат
 scheduler.add_job(scheduled_deadline_checker, 'interval', seconds=60)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ініціалізуємо кеш у пам'яті
+    # Initialize cache
     FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
 
     scheduler.start()
@@ -39,7 +37,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, title="Student Course Manager")
 
-# --- Global Exception Handler (Bonus Point) ---
+# --- Global Exception Handler ---
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
@@ -47,11 +45,11 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"message": "Global Error Handler Caught this", "details": str(exc)},
     )
 
-# Підключення роутерів (ось тут ми підтягуємо код з інших файлів)
+# --- Include Routers ---
 app.include_router(auth.router)
 app.include_router(courses.router)
 app.include_router(students.router)
 
 @app.get("/")
-def root():
+def start_point():
     return {"message": "Welcome to Course Management API"}

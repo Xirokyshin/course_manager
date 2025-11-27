@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone  # <--- Додали timezone
+from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User, Student
-from ..config import settings  # Імпортуємо наші налаштування
+from ..config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -51,14 +51,13 @@ async def get_current_student(token: str = Depends(oauth2_scheme), db: Session =
     )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        # У токені ми будемо зберігати email студента в полі "sub"
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    # Шукаємо саме в таблиці Student
+    # Search for student by email
     student = db.query(Student).filter(Student.email == email).first()
     if student is None:
         raise credentials_exception

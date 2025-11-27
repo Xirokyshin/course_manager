@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-# Using SQLite for simplicity (file-based DB as per requirements)
+# Using SQLite
 SQLALCHEMY_DATABASE_URL = "sqlite:///./course_manager.db"
 
 engine = create_engine(

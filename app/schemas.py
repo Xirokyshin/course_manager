@@ -1,5 +1,4 @@
-# app/schemas.py
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
 from typing import List, Optional, Dict
 from datetime import datetime
 
@@ -29,24 +28,20 @@ class AssignmentResponse(AssignmentCreate):
         from_attributes = True
 
 # --- Student Schemas ---
-# 1. Створюємо спільну базу (тільки безпечні поля)
 class StudentBase(BaseModel):
     full_name: str
     email: EmailStr
 
 
-# 2. Схема для СТВОРЕННЯ (тут додаємо пароль)
 class StudentCreate(StudentBase):
     password: str
 
 
-# 3. Схема для ЛОГІНУ (тут тільки пошта і пароль)
 class StudentLogin(BaseModel):
     email: str
     password: str
 
 
-# 4. Схема для ВІДПОВІДІ (наслідує Base, а не Create -> тому без пароля!)
 class StudentResponse(StudentBase):
     id: int
 
@@ -59,12 +54,15 @@ class CourseCreate(BaseModel):
     max_lab_points: int
     max_exam_points: int
 
-    @field_validator('max_exam_points')
-    def check_total(cls, v, values):
-        # Simple validation example
-        if v > 100:
-            raise ValueError('Exam points cannot exceed 100')
-        return v
+    @model_validator(mode='after')
+    def check_total_score_is_100(self):
+        total = self.max_lab_points + self.max_exam_points
+
+        if total != 100:
+            raise ValueError(
+                f'Total course points must be exactly 100. Currently: {self.max_lab_points} (Labs) + {self.max_exam_points} (Exam) = {total}')
+
+        return self
 
 class CourseResponse(CourseCreate):
     id: int
@@ -82,12 +80,11 @@ class GradeCreate(BaseModel):
 
 class SubmissionCreate(BaseModel):
     assignment_id: int
-    answer_text: str  # Наприклад, посилання на GitHub або текст відповіді
+    answer_text: str  # not final type
 
 class GradeResponse(GradeCreate):
     id: int
     submitted_at: datetime
-
 
     class Config:
         from_attributes = True

@@ -21,7 +21,7 @@ def create_course(
 def delete_course(
     course_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user) # Тільки викладач може видаляти
+    current_user: User = Depends(get_current_user) # Only User can delete
 ):
     return CourseService.delete_course(db, course_id)
 
@@ -29,7 +29,7 @@ def delete_course(
 def delete_assignment(
     assignment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user) # Тільки викладач
+    current_user: User = Depends(get_current_user) # Only User can delete
 ):
     return CourseService.delete_assignment(db, assignment_id)
 
@@ -38,9 +38,8 @@ def delete_assignment(
 async def read_course(
     course_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user) # Only User can delete
 ):
-    # Просто повертаємо курс, без зайвих запитів
     return CourseService.get_course(db, course_id)
 
 @router.post("/{course_id}/assignments/")
@@ -48,6 +47,6 @@ def add_assignment(
     course_id: int,
     assignment: AssignmentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user) # Only User can delete
 ):
     return CourseService.add_assignment(db, course_id, assignment)
