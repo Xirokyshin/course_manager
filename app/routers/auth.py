@@ -11,15 +11,15 @@ router = APIRouter(tags=["Authentication"])
 
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    # Перевірка на існування користувача
+    # check for existing username
     existing_user = db.query(User).filter(User.username == user.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already registered")
 
-    # Хешування пароля
+    # hash password
     hashed_pwd = get_password_hash(user.password)
 
-    # Створення та збереження користувача
+    # Create and save user
     db_user = User(username=user.username, email=user.email, hashed_password=hashed_pwd)
     db.add(db_user)
     db.commit()

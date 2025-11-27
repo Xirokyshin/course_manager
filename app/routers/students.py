@@ -14,9 +14,8 @@ def create_student(
         student: StudentCreate,
         course_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)  # Тільки викладач може створювати
+        current_user: User = Depends(get_current_user)
 ):
-    # Перевірка на дублікат email
     if db.query(Student).filter(Student.email == student.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -40,7 +39,7 @@ def login_student(login_data: StudentLogin, db: Session = Depends(get_db)):
     if not student or not verify_password(login_data.password, student.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
 
-    # Створюємо токен, де sub = email студента
+    # create JWT token for student where "sub" is student email
     access_token = create_access_token(data={"sub": student.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -50,7 +49,6 @@ def delete_student(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user) # Захист: тільки викладач
 ):
-    # Тут ми викликаємо сервіс (доведеться імпортувати CourseService в цей файл, якщо ще немає)
     return CourseService.delete_student(db, student_id)
 
 @router.post("/students/", response_model=StudentResponse)
@@ -60,7 +58,6 @@ def create_student(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Додавання студента до курсу
     db_student = Student(**student.model_dump(), course_id=course_id)
     db.add(db_student)
     db.commit()
@@ -71,9 +68,9 @@ def create_student(
 def submit_assignment(
     submission: SubmissionCreate,
     db: Session = Depends(get_db),
-    current_student: Student = Depends(get_current_student) # <--- ТЕПЕР ТУТ ЗАХИСТ
+    current_student: Student = Depends(get_current_student)
 ):
-    # Ми передаємо ID студента, який ми дізналися з токена
+    # transfer student_id from token to submission
     return CourseService.submit_assignment(db, submission, student_id=current_student.id)
 @router.post("/grades/", response_model=GradeResponse)
 def grade_student(

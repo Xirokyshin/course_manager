@@ -1,13 +1,12 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, JSON
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 from datetime import datetime, timezone
 from .database import Base
 
 
 class User(Base):
     """Entity for Authorization requirement."""
-    __tablename__ = "users"
+    __tablename__ = "users" # Admin(Teacher)
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
@@ -22,9 +21,6 @@ class Course(Base):
     description = Column(String)
     max_lab_points = Column(Integer, default=40)
     max_exam_points = Column(Integer, default=60)
-
-    # --- МАГІЯ ТУТ (cascade) ---
-    # Якщо видаляємо курс -> видаляються всі студенти і всі завдання цього курсу
     students = relationship("Student", back_populates="course", cascade="all, delete-orphan")
     assignments = relationship("Assignment", back_populates="course", cascade="all, delete-orphan")
 
@@ -37,10 +33,7 @@ class Student(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     course_id = Column(Integer, ForeignKey("courses.id"))
-
     course = relationship("Course", back_populates="students")
-
-    # Якщо видаляємо студента -> видаляються всі його оцінки
     grades = relationship("Grade", back_populates="student", cascade="all, delete-orphan")
 
 
@@ -55,10 +48,7 @@ class Assignment(Base):
     penalty_points = Column(Integer, default=0)
     content = Column(JSON)
     course_id = Column(Integer, ForeignKey("courses.id"))
-
     course = relationship("Course", back_populates="assignments")
-
-    # Якщо видаляємо завдання -> видаляються всі оцінки за нього
     grades = relationship("Grade", back_populates="assignment", cascade="all, delete-orphan")
 
 
@@ -67,12 +57,9 @@ class Grade(Base):
     __tablename__ = "grades"
     id = Column(Integer, primary_key=True, index=True)
     score = Column(Float, nullable=True)
-    # Правильний час за замовчуванням
     submitted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     student_answer = Column(String, nullable=True)
-
     student_id = Column(Integer, ForeignKey("students.id"))
     assignment_id = Column(Integer, ForeignKey("assignments.id"))
-
     student = relationship("Student", back_populates="grades")
     assignment = relationship("Assignment", back_populates="grades")
